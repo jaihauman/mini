@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini App — Custom Theme Locker</title>
+
+  <!-- Telegram WebApp -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Monetag Reward SDK (your provided script) -->
+  <script src="//libtl.com/sdk.js" data-zone="8555852" data-sdk="show_8555852"></script>
+
+  <style>
+    :root{
+      --bg: #0f1720;
+      --card: #111827;
+      --muted: #9ca3af;
+      --accent: #06b6d4;
+      --text: #e6eef3;
+      --glass: rgba(255,255,255,0.03);
+      --blur: 8px;
+    }
+    .light {
+      --bg: #f6fbff;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --accent: #0077cc;
+      --text: #0b1220;
+      --glass: rgba(0,0,0,0.03);
+      --blur: 0px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      min-height:100%;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,var(--bg), #07101a 120%);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding-bottom:84px; /* space for bottom nav */
+    }
+
+    /* Header */
+    header{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:18px 16px;
+      position:sticky;
+      top:0;
+      backdrop-filter: blur(var(--blur));
+      background: linear-gradient(180deg, rgba(0,0,0,0.16), transparent);
+      z-index:40;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#0ea5a3);
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    }
+    .title{
+      font-size:16px;font-weight:600;
+    }
+    .subtitle{font-size:12px;color:var(--muted)}
+
+    .spacer{flex:1}
+
+    /* container */
+    .container{max-width:1100px;margin:16px auto;padding:0 16px}
+
+    /* Toolbar */
+    .toolbar{display:flex;gap:8px;align-items:center;margin:8px 0}
+    .btn{
+      background:var(--card);
+      border-radius:10px;padding:8px 12px;border:none;cursor:pointer;
+      color:var(--text); box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      display:inline-flex;gap:8px;align-items:center;font-weight:600;
+      transform: translateY(0);
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+    .btn:active{transform: translateY(1px)}
+    .muted{color:var(--muted);font-weight:500}
+
+    /* Grid */
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:14px}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border-radius:12px;padding:12px;overflow:hidden;position:relative;
+      transition: transform .22s cubic-bezier(.2,.9,.3,1), box-shadow .22s;
+      box-shadow: 0 6px 20px rgba(2,6,23,0.6);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+    .card:hover{ transform: translateY(-6px) scale(1.01) }
+
+    .thumb{
+      width:100%;height:140px;border-radius:10px;object-fit:cover;display:block;
+      filter: blur(8px) grayscale(.15) brightness(.75);
+      transition: filter .4s ease, transform .4s ease;
+      transform-origin:center;
+    }
+    .thumb.unlocked{
+      filter:none; transform: scale(1.01);
+    }
+
+    .card h4{margin:10px 0 4px 0;font-size:15px}
+    .card p{margin:0;font-size:13px;color:var(--muted)}
+
+    .lockbar{
+      display:flex;gap:8px;align-items:center;margin-top:10px;justify-content:space-between;
+    }
+    .small{
+      font-size:13px;padding:6px 10px;border-radius:8px;background:var(--glass);color:var(--muted);
+    }
+
+    .unlockBtn{
+      background:linear-gradient(90deg,var(--accent), #06b6d4); color:white;border:none;padding:10px 12px;border-radius:9px;font-weight:700;cursor:pointer;
+      box-shadow: 0 8px 22px rgba(6,182,212,0.12);
+    }
+    .unlockedBadge{
+      background:linear-gradient(90deg,#16a34a,#22c55e);padding:8px 10px;border-radius:9px;font-weight:700;color:white;font-size:13px;
+    }
+
+    /* bottom nav */
+    nav.bottom{
+      position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:60;
+      width:calc(100% - 28px);max-width:900px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
+      border-radius:14px;padding:10px 14px;display:flex;gap:8px;align-items:center;box-shadow: 0 12px 40px rgba(2,6,23,0.6);
+      backdrop-filter: blur(var(--blur));
+    }
+    .nav-item{flex:1;text-align:center;font-weight:700;padding:8px 6px;border-radius:10px;cursor:pointer;color:var(--muted)}
+    .nav-item.active{background:var(--card);color:var(--text)}
+
+    /* small helpers */
+    .row{display:flex;gap:8px;align-items:center}
+    .center{display:flex;align-items:center;justify-content:center}
+    .hidden{display:none}
+
+    /* responsive */
+    @media (max-width:420px){
+      .thumb{height:120px}
+      header{padding:12px}
+      .title{font-size:15px}
+    }
+
+    /* subtle entrance animation */
+    .fadeIn{opacity:0;transform: translateY(8px);animation:fadeIn .45s forwards}
+    @keyframes fadeIn{to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">MA</div>
+    <div>
+      <div class="title">MiniApp Locker</div>
+      <div class="subtitle">Custom theme • Monetag rewards</div>
+    </div>
+    <div class="spacer"></div>
+
+    <div class="toolbar">
+      <button id="themeBtn" class="btn" title="Toggle theme">Toggle Theme</button>
+      <button id="helpBtn" class="btn muted">How it works</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div>
+        <h2 style="margin:0">Explore premium content</h2>
+        <div class="muted" style="margin-top:6px">Watch a short ad to unlock each item — safe, fast and secure.</div>
+      </div>
+      <div style="text-align:right">
+        <div class="muted">Unlocked: <span id="unlockedCount">0</span>/<span id="totalCount">0</span></div>
+        <div style="height:8px"></div>
+        <div id="lastMsg" class="muted">Ready</div>
+      </div>
+    </div>
+
+    <!-- Content grid -->
+    <div id="grid" class="grid" style="margin-top:14px"></div>
+  </main>
+
+  <!-- bottom nav -->
+  <nav class="bottom" role="navigation" aria-label="Main navigation">
+    <div id="homeNav" class="nav-item active">Home</div>
+    <div id="galleryNav" class="nav-item">Gallery</div>
+    <div id="linksNav" class="nav-item">Links</div>
+    <div id="profileNav" class="nav-item">Profile</div>
+  </nav>
+
+  <script>
+    // init Telegram WebApp
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      try { tg.expand(); } catch(e) {}
+    }
+
+    // Basic app data (sample). Replace images and links with your own.
+    const ITEMS = [
+      { id: "itm1", title: "Sunset Overcliff", desc: "4K wallpaper - scenic sunset", img: "https://placehold.co/600x400?text=Sunset", url: "https://example.com/sunset" },
+      { id: "itm2", title: "Neon City", desc: "Cyberpunk wallpaper", img: "https://placehold.co/600x400?text=Neon+City", url: "https://example.com/neon" },
+      { id: "itm3", title: "Mountain Lake", desc: "Calm lake view", img: "https://placehold.co/600x400?text=Lake", url: "https://example.com/lake" },
+      { id: "itm4", title: "Aurora Sky", desc: "Northern lights", img: "https://placehold.co/600x400?text=Aurora", url: "https://example.com/aurora" },
+      { id: "itm5", title: "Retro Travel Poster", desc: "Vintage travel art", img: "https://placehold.co/600x400?text=Retro", url: "https://example.com/retro" },
+      { id: "itm6", title: "Abstract Shapes", desc: "Decorative abstract", img: "https://placehold.co/600x400?text=Abstract", url: "https://example.com/abstract" }
+    ];
+
+    // State
+    const UNLOCK_KEY = "miniapp_unlocked_v1";
+    let unlocked = new Set(JSON.parse(localStorage.getItem(UNLOCK_KEY) || "[]"));
+    let currentRequestItem = null; // item id for which ad is playing
+
+    // Monetag SDK function name (provided by your script)
+    // show_8555852() will be called to show a rewarded ad.
+    // Monetag should post a 'rewarded' DOM event when ad completes.
+    // We'll listen for that event and unlock the associated item.
+
+    // Utility
+    const $ = (sel) => document.querySelector(sel);
+
+    // Render grid
+    const grid = $("#grid");
+    function renderGrid() {
+      grid.innerHTML = "";
+      document.getElementById("totalCount").textContent = ITEMS.length;
+      let count = 0;
+      for (const it of ITEMS) {
+        const isUnlocked = unlocked.has(it.id);
+        if (isUnlocked) count++;
+        const card = document.createElement("div");
+        card.className = "card fadeIn";
+        card.innerHTML = `
+          <img loading="lazy" class="thumb ${isUnlocked ? 'unlocked' : ''}" src="${it.img}" alt="${escapeHtml(it.title)}" />
+          <h4>${escapeHtml(it.title)}</h4>
+          <p>${escapeHtml(it.desc)}</p>
+          <div class="lockbar">
+            <div class="small">${isUnlocked ? "Unlocked" : "Locked"}</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              ${isUnlocked ? `<div class="unlockedBadge">Open</div>` : `<button class="unlockBtn" data-id="${it.id}">Watch Ad to Unlock</button>`}
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+      document.getElementById("unlockedCount").textContent = count;
+      attachUnlockHandlers();
+    }
+
+    function attachUnlockHandlers() {
+      document.querySelectorAll(".unlockBtn").forEach(btn => {
+        btn.onclick = (e) => {
+          const id = e.currentTarget.getAttribute("data-id");
+          startUnlockForItem(id);
+        };
+      });
+      // Open links for unlocked items when clicking the badge
+      document.querySelectorAll(".unlockedBadge").forEach(b => {
+        b.onclick = () => {
+          // find item with status unlocked and open first unlocked link (no specific id tied to badge)
+          // Better: attach id in markup, but for simplicity we will allow user to click the image to open
+        };
+      });
+      document.querySelectorAll(".card img.unlocked").forEach(img => {
+        img.onclick = (e) => {
+          // find the corresponding item by src
+          const src = e.currentTarget.getAttribute("src");
+          const itm = ITEMS.find(x => x.img === src);
+          if (itm) window.open(itm.url, "_blank");
+        };
+      });
+    }
+
+    // start unlock flow for a specific item
+    function startUnlockForItem(itemId) {
+      const item = ITEMS.find(i => i.id === itemId);
+      if (!item) return;
+      currentRequestItem = itemId;
+      updateStatus(`Preparing ad for “${item.title}”...`);
+
+      // call Monetag show function
+      if (typeof window.show_8555852 === "function") {
+        try {
+          // Optional: provide a callback param or metadata if Monetag supports it (not all do)
+          window.show_8555852();
+          updateStatus("Playing ad — please watch until the end.");
+        } catch (err) {
+          console.error("Monetag show call failed:", err);
+          updateStatus("Error showing ad. Please try again.");
+          alert("Ad failed to start. Check Monetag configuration.");
+        }
+      } else {
+        updateStatus("Ad SDK not loaded.");
+        alert("Reward SDK not available. Make sure the Monetag script is loaded.");
+      }
+    }
+
+    // Listen for Monetag rewarded event.
+    // Many Monetag integrations dispatch a 'rewarded' event (document). 
+    // If your SDK uses a different event name, adapt this listener.
+    document.addEventListener("rewarded", function(ev){
+      // The event could contain data — but many implementations do not provide the item id.
+      // We'll rely on currentRequestItem to know which item to unlock.
+      if (!currentRequestItem) {
+        console.warn("Rewarded event received but no currentRequestItem set.");
+        updateStatus("Ad completed.");
+        return;
+      }
+      unlockItem(currentRequestItem);
+      updateStatus("Ad completed — content unlocked!");
+      currentRequestItem = null;
+    });
+
+    // Fallback: some SDKs call a custom global callback name; we add a generic hook
+    // If Monetag supports calling window.onMonetagRewarded() you can set it here:
+    window.onMonetagRewarded = function(payload){
+      if (currentRequestItem) {
+        unlockItem(currentRequestItem);
+        currentRequestItem = null;
+        updateStatus("Ad completed — content unlocked!");
+      }
+    };
+
+    // unlock logic
+    function unlockItem(itemId){
+      if (!itemId) return;
+      unlocked.add(itemId);
+      localStorage.setItem(UNLOCK_KEY, JSON.stringify(Array.from(unlocked)));
+      renderGrid();
+      // Optionally notify the Telegram bot (if you want server-side tracking)
+      try {
+        if (tg && tg.sendData) {
+          const payload = { event: "unlocked", item: itemId, ts: Date.now() };
+          tg.sendData(JSON.stringify(payload));
+        }
+      } catch(e){ /* ignore */ }
+    }
+
+    function updateStatus(txt){
+      const el = document.getElementById("lastMsg");
+      el.textContent = txt;
+    }
+
+    // Theme handling: auto-sync with Telegram if available
+    const body = document.body;
+    const THEME_KEY = "miniapp_theme_v1";
+
+    function applyTheme(theme){
+      if (theme === "light") body.classList.add("light"); else body.classList.remove("light");
+      localStorage.setItem(THEME_KEY, theme);
+    }
+
+    // toggles
+    $("#themeBtn").addEventListener("click", () => {
+      const cur = localStorage.getItem(THEME_KEY) || (tg?.colorScheme === "light" ? "light" : "dark");
+      applyTheme(cur === "light" ? "dark" : "light");
+    });
+
+    // help
+    $("#helpBtn").addEventListener("click", () => {
+      alert("How it works:\n\n1) Tap 'Watch Ad to Unlock' on any item.\n2) Watch the rewarded ad until it's finished.\n3) The item unlocks and you can open the full content.\n\nIf the ad fails to show, check your Monetag panel or network.");
+    });
+
+    // bottom nav (simple)
+    document.getElementById("homeNav").addEventListener("click", ()=> setActiveNav("home"));
+    document.getElementById("galleryNav").addEventListener("click", ()=> setActiveNav("gallery"));
+    document.getElementById("linksNav").addEventListener("click", ()=> setActiveNav("links"));
+    document.getElementById("profileNav").addEventListener("click", ()=> setActiveNav("profile"));
+
+    function setActiveNav(k){
+      document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+      if (k === "home") document.getElementById("homeNav").classList.add("active");
+      if (k === "gallery") document.getElementById("galleryNav").classList.add("active");
+      if (k === "links") document.getElementById("linksNav").classList.add("active");
+      if (k === "profile") document.getElementById("profileNav").classList.add("active");
+      // small navigation behaviors
+      if (k === "profile") {
+        alert("Profile section — unlocked items: " + Array.from(unlocked).join(", "));
+      }
+      if (k === "links") {
+        alert("Links: Example external links are available inside unlocked items.");
+      }
+    }
+
+    // initial theme: prefer saved -> telegram -> default dark
+    (function initThemeAndRender(){
+      const saved = localStorage.getItem(THEME_KEY);
+      const tgTheme = (tg && tg.colorScheme) ? (tg.colorScheme === "light" ? "light" : "dark") : null;
+      applyTheme(saved || tgTheme || "dark");
+
+      // If telegram theme changes while app is open, listen
+      if (tg && tg.onEvent) {
+        // note: Telegram webapp provides onEvent('themeChanged') sometimes; fallback to polling
+        try {
+          tg.onEvent && tg.onEvent('themeChanged', ()=> {
+            const t = tg.colorScheme === "light" ? "light" : "dark";
+            applyTheme(t);
+          });
+        } catch(e){}
+      }
+
+      renderGrid();
+    })();
+
+    // safe escape
+    function escapeHtml(str){
+      return (str + '').replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m] });
+    }
+
+    // show quick toast on monetag SDK load failure / success
+    window.addEventListener("load", ()=>{
+      setTimeout(()=> {
+        if (typeof window.show_8555852 !== "function") {
+          console.warn("Monetag show function not available. Ensure the SDK script has loaded and the data-sdk attribute is correct.");
+          updateStatus("Warning: Monetag SDK not ready");
+        } else {
+          updateStatus("Ready — SDK loaded");
+        }
+      }, 600);
+    });
+
+    // Developer note: If your Monetag SDK triggers a different event name when ad completes,
+    // adapt the `document.addEventListener('rewarded', ...)` line to the correct event.
+    // Example alternatives: 'rewarded_ad_completed', 'onReward', custom callback names, etc.
+  </script>
+</body>
+</html>
