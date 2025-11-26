@@ -198,14 +198,16 @@
     }
 
     // Basic app data (sample). Replace images and links with your own.
-    const ITEMS = [
-      { id: "itm1", title: "Sunset Overcliff", desc: "4K wallpaper - scenic sunset", img: "https://placehold.co/600x400?text=Sunset", url: "https://example.com/sunset" },
-      { id: "itm2", title: "Neon City", desc: "Cyberpunk wallpaper", img: "https://placehold.co/600x400?text=Neon+City", url: "https://example.com/neon" },
-      { id: "itm3", title: "Mountain Lake", desc: "Calm lake view", img: "https://placehold.co/600x400?text=Lake", url: "https://example.com/lake" },
-      { id: "itm4", title: "Aurora Sky", desc: "Northern lights", img: "https://placehold.co/600x400?text=Aurora", url: "https://example.com/aurora" },
-      { id: "itm5", title: "Retro Travel Poster", desc: "Vintage travel art", img: "https://placehold.co/600x400?text=Retro", url: "https://example.com/retro" },
-      { id: "itm6", title: "Abstract Shapes", desc: "Decorative abstract", img: "https://placehold.co/600x400?text=Abstract", url: "https://example.com/abstract" }
-    ];
+
+const ITEMS = [
+  {
+    id: "test1",
+    title: "Test Image 1",
+    desc: "Sample premium image",
+    img: "https://placehold.co/600x400?text=Test1",
+    url: "https://example.com"
+  }
+];
 
     // State
     const UNLOCK_KEY = "miniapp_unlocked_v1";
@@ -433,16 +435,7 @@ function startUnlockForItem(itemId) {
     // Developer note: If your Monetag SDK triggers a different event name when ad completes,
     // adapt the `document.addEventListener('rewarded', ...)` line to the correct event.
     // Example alternatives: 'rewarded_ad_completed', 'onReward', custom callback names, etc.
-    const ITEMS = [
-  {
-    id: "test1",
-    title: "Test Image 1",
-    desc: "Sample premium image",
-    img: "https://placehold.co/600x400?text=Test1",
-    url: "https://example.com"
-  }
-  // add more if you want
-];
+  
 
   </script>
 </body>
