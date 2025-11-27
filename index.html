@@ -1,195 +1,219 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MiniApp Reward Unlock (Monetag Universal)</title>
-
-<!-- Telegram -->
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<!-- Monetag Rewarded SDK (your zone) -->
-<script src="//libtl.com/sdk.js" data-zone="8555852" data-sdk="show_8555852"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Simple Feed</title>
 
 <style>
-body{
-  background:#0f1720;
-  color:white;
-  font-family:Arial;
-  padding:20px;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #000; overflow: hidden; }
+
+#feed {
+    height: 100vh;
+    width: 100vw;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
 }
-.card{
-  background:#1f2937;
-  padding:15px;
-  border-radius:10px;
-  margin-bottom:20px;
+#feed::-webkit-scrollbar { display: none; }
+
+.post {
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+    scroll-snap-align: start;
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.thumb{
-  width:100%;
-  height:180px;
-  object-fit:cover;
-  border-radius:10px;
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
-.unlockBtn{
-  margin-top:10px;
-  width:100%;
-  padding:10px;
-  background:#06b6d4;
-  color:white;
-  font-size:16px;
-  border:none;
-  border-radius:8px;
+
+/* PROGRESS BAR */
+#progressContainer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 7px;
+    background: rgba(255,255,255,0.2);
+    z-index: 9999;
 }
-.unlockedBtn{
-  display:none;
-  margin-top:10px;
-  width:100%;
-  padding:10px;
-  background:#16a34a;
-  color:white;
-  font-size:16px;
-  border:none;
-  border-radius:8px;
+#progressBar {
+    height: 100%;
+    width: 0%;
+    background: red;
 }
-#status{
-  margin-top:15px;
-  color:#93a3af;
+
+/* PLAY/PAUSE ICON */
+#playPauseIcon {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 70px;
+    color: white;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    z-index: 99999;
+    font-weight: bold;
+    line-height: 0;
 }
 </style>
 </head>
-
 <body>
 
-<h2>Premium Content</h2>
-<p>Watch a Monetag rewarded ad to unlock this content.</p>
+<div id="feed"></div>
 
-<div class="card">
-  <img class="thumb" src="https://placehold.co/600x400?text=Premium+Video">
-  <h3>Exclusive YouTube Video</h3>
-  <p>Must watch rewarded ad to unlock.</p>
+<!-- Play/Pause Icon -->
+<div id="playPauseIcon">❚❚</div>
 
-  <button id="unlockBtn" class="unlockBtn">Watch Ad To Unlock</button>
-  <button id="openBtn" class="unlockedBtn">Open Content</button>
+<!-- Progress Bar -->
+<div id="progressContainer">
+    <div id="progressBar"></div>
 </div>
 
-<div id="status">Ready</div>
-
 <script>
-const YT_LINK = "https://www.youtube.com/watch?v=_PxpEmSc3zo&list=LL";
-let current = false;
+/* SAMPLE VIDEOS */
+const videoList = [
+    "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
+    "https://samplelib.com/lib/preview/mp4/sample-10s.mp4",
+    "https://samplelib.com/lib/preview/mp4/sample-15s.mp4",
+    "https://samplelib.com/lib/preview/mp4/sample-20s.mp4",
+    "https://samplelib.com/lib/preview/mp4/sample-30s.mp4"
+];
 
-// open content
-document.getElementById("openBtn").onclick = () => {
-  window.open(YT_LINK, "_blank");
-};
+function getRandomVideo() {
+    return videoList[Math.floor(Math.random() * videoList.length)];
+}
 
-// start ad
-document.getElementById("unlockBtn").onclick = () => {
-  current = true;
-  update("Loading ad...");
+const feed = document.getElementById("feed");
+const progressContainer = document.getElementById("progressContainer");
+const progressBar = document.getElementById("progressBar");
+let currentVideo = null;
 
-  if (typeof window.show_8555852 === "function") {
-    try {
-      window.show_8555852();
-      update("Ad is playing...");
-    } catch(e) {
-      update("Error: Ad failed");
-      alert("Ad failed to load.");
+/* ICON HANDLER */
+function showPlayPauseIcon(isPlaying) {
+    const icon = document.getElementById("playPauseIcon");
+
+    if (isPlaying) {
+        icon.textContent = "❚❚";  // clean pause icon
+    } else {
+        icon.textContent = "▲";   // clean white triangle (play)
     }
-  } else {
-    update("SDK not loaded");
-    alert("Monetag SDK not loaded!");
-  }
-};
 
-// ----------------------------
-// UNIVERSAL MONETAG CALLBACKS
-// ----------------------------
+    icon.style.opacity = 1;
 
-// 1) standard callback
-window.show_8555852_callback = function(event, data){
-  console.log("Monetag callback:", event, data);
-  handleRewardEvent(event);
-};
-
-// 2) alternative event names
-document.addEventListener("reward", ()=>handleRewardEvent("reward"));
-document.addEventListener("rewarded", ()=>handleRewardEvent("reward"));
-document.addEventListener("complete", ()=>handleRewardEvent("reward"));
-document.addEventListener("monetag_reward", ()=>handleRewardEvent("reward"));
-document.addEventListener("monetag.complete", ()=>handleRewardEvent("reward"));
-
-// 3) Monetag Reward Object alternative
-if (window.MonetagReward && window.MonetagReward.on) {
-  MonetagReward.on("reward", ()=>handleRewardEvent("reward"));
+    setTimeout(() => {
+        icon.style.opacity = 0;
+    }, 800);
 }
 
-// reward handler
-function handleRewardEvent(ev){
-  if (!current) return;
-  if (ev !== "reward" && ev !== "complete") return;
+/* CREATE POST */
+function createPost() {
+    const div = document.createElement("div");
+    div.className = "post";
 
-  current = false;
-  unlock();
-}
+    const video = document.createElement("video");
+    video.src = getRandomVideo();
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
 
-// unlock function
-function unlock(){
-  update("Reward completed! Unlocked.");
-
-  document.getElementById("unlockBtn").style.display = "none";
-  document.getElementById("openBtn").style.display = "block";
-}
-
-function update(t){
-  document.getElementById("status").textContent = t;
-}
-</script>
-<script src="//libtl.com/sdk.js" data-zone="8555852" data-sdk="show_8555852"></script>
-
-<button onclick="startAd()">WATCH AD</button>
-
-<script>
-function log(x){ console.log("%c " + x, "background:#222; color:#0f0; padding:4px"); }
-
-function startAd(){
-    log("Ad requested...");
-    try {
-        show_8555852();
-        log("show_8555852() called");
-    } catch(e) {
-        log("ERROR calling show_8555852(): " + e);
-    }
-}
-
-/* --- MONETAG CALLBACK SNIFFERS --- */
-
-// official callback (if used)
-window.show_8555852_callback = function(event, data){
-    log("callback: " + event + " | " + JSON.stringify(data));
-};
-
-// detect ANY event
-[
-    "reward","rewarded","complete","finished",
-    "monetag_reward","monetag.completed","monetag.reward",
-    "done","ad_complete"
-].forEach(ev=>{
-    document.addEventListener(ev, ()=>{
-        log("DOM EVENT FIRED: " + ev);
+    /* Tap Play/Pause */
+    video.addEventListener("click", () => {
+        if (video.paused) {
+            video.play();
+            showPlayPauseIcon(true);
+        } else {
+            video.pause();
+            showPlayPauseIcon(false);
+        }
     });
-});
 
-// detect MonetagReward object
-let intv = setInterval(()=>{
-    if (window.MonetagReward && MonetagReward.on){
-        log("MonetagReward object detected");
-        MonetagReward.on("reward", ()=>{
-            log("MonetagReward reward event fired");
-        });
-        clearInterval(intv);
+    /* Autoplay when loaded */
+    video.addEventListener("loadeddata", () => video.play());
+
+    /* Auto next */
+    video.addEventListener("ended", () => {
+        feed.scrollBy({ top: window.innerHeight, behavior: "smooth" });
+    });
+
+    div.appendChild(video);
+    return div;
+}
+
+/* Initial videos */
+for (let i = 0; i < 4; i++) {
+    feed.appendChild(createPost());
+}
+
+/* Detect current video */
+function updateCurrentVideo() {
+    const posts = document.querySelectorAll(".post");
+    let mid = window.innerHeight / 2;
+
+    posts.forEach(post => {
+        const rect = post.getBoundingClientRect();
+        const vid = post.querySelector("video");
+
+        if (rect.top < mid && rect.bottom > mid) {
+            if (currentVideo !== vid) {
+                if (currentVideo) currentVideo.pause();
+                currentVideo = vid;
+                currentVideo.play();
+                progressBar.style.width = "0%";
+            }
+        }
+    });
+
+    /* Infinite load */
+    if (posts[posts.length - 2].getBoundingClientRect().top < window.innerHeight) {
+        feed.appendChild(createPost());
     }
-},500);
+}
+
+/* Update progress bar */
+function updateProgress() {
+    if (!currentVideo || !currentVideo.duration) return;
+    let percent = (currentVideo.currentTime / currentVideo.duration) * 100;
+    progressBar.style.width = percent + "%";
+}
+setInterval(updateProgress, 50);
+
+/* SEEKING BAR */
+let seeking = false;
+
+function seek(e) {
+    if (!currentVideo || !currentVideo.duration) return;
+
+    const rect = progressContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, x / rect.width));
+
+    currentVideo.currentTime = percent * currentVideo.duration;
+    progressBar.style.width = (percent * 100) + "%";
+}
+
+progressContainer.addEventListener("mousedown", e => { seeking = true; seek(e); });
+progressContainer.addEventListener("mousemove", e => { if (seeking) seek(e); });
+document.addEventListener("mouseup", () => seeking = false);
+
+progressContainer.addEventListener("touchstart", e => { seeking = true; seek(e.touches[0]); });
+progressContainer.addEventListener("touchmove", e => { if (seeking) seek(e.touches[0]); });
+document.addEventListener("touchend", () => seeking = false);
+
+/* On scroll: update video */
+feed.addEventListener("scroll", updateCurrentVideo);
+
+updateCurrentVideo();
 </script>
 
 </body>
