@@ -1,220 +1,528 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TikTok Simple Feed</title>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Premium Feed — Videos & Photos</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #000; overflow: hidden; }
-
-#feed {
-    height: 100vh;
-    width: 100vw;
-    overflow-y: scroll;
-    scroll-snap-type: y mandatory;
-    -webkit-overflow-scrolling: touch;
-}
-#feed::-webkit-scrollbar { display: none; }
-
-.post {
-    height: 100vh;
-    width: 100vw;
-    position: relative;
-    scroll-snap-align: start;
-    background: black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Base reset */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family: "Poppins",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  background:linear-gradient(180deg,#050509,#0b0b10);
+  color:#fff;
+  overflow:hidden;
 }
 
-video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+/* FEEDS */
+#feed,#picFeed{
+  position:relative;
+  height:100vh;
+  width:100vw;
+  overflow-y:scroll;
+  -webkit-overflow-scrolling:touch;
+  scroll-snap-type:y mandatory;
+  display:none;
+}
+#feed::-webkit-scrollbar,#picFeed::-webkit-scrollbar{display:none}
+
+/* POSTS */
+.post,.picPost{
+  height:100vh;
+  width:100vw;
+  scroll-snap-align:start;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  background:linear-gradient(180deg,rgba(0,0,0,0.2),#000);
+}
+video,img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
 }
 
-/* PROGRESS BAR */
-#progressContainer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 7px;
-    background: rgba(255,255,255,0.2);
-    z-index: 9999;
+/* LOADER */
+.spinner{
+  position:absolute;
+  width:56px;height:56px;border-radius:50%;
+  border:4px solid rgba(255,255,255,0.08);
+  border-top-color:#ff416c;
+  animation:spin .9s linear infinite;
+  z-index:60;
+  filter:drop-shadow(0 6px 18px rgba(255,65,108,0.15));
 }
-#progressBar {
-    height: 100%;
-    width: 0%;
-    background: red;
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PROGRESS BAR (video only) */
+#progressContainer{
+  position:fixed;left:12px;right:12px;bottom:86px;
+  height:8px;background:rgba(255,255,255,0.08);
+  border-radius:10px;backdrop-filter:blur(6px);z-index:120;
+  display:block;
+}
+#progressBar{
+  height:100%;width:0%;border-radius:10px;
+  background:linear-gradient(90deg,#ff416c,#ff8a00);
+  box-shadow:0 8px 30px rgba(255,65,108,0.12),0 0 12px rgba(255,138,0,0.06);
+  transition:width .06s linear;
 }
 
-/* PLAY/PAUSE ICON */
-#playPauseIcon {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 70px;
-    color: white;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    pointer-events: none;
-    z-index: 99999;
-    font-weight: bold;
-    line-height: 0;
+/* PLAY/PAUSE flash */
+#playPauseIcon{
+  position:fixed;left:50%;top:50%;
+  transform:translate(-50%,-50%);z-index:300;
+  font-size:72px;color:#fff;opacity:0;pointer-events:none;
+  filter:drop-shadow(0 10px 30px rgba(255,65,108,0.3));
+  transition:opacity .25s ease, transform .25s ease;
 }
+
+/* BOTTOM NAV (glass) */
+#bottomNav{
+  position:fixed;left:8px;right:8px;bottom:12px;height:72px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.08));
+  border-radius:14px;padding:8px 12px;display:flex;align-items:center;justify-content:space-around;
+  backdrop-filter:blur(14px);z-index:200;
+  box-shadow:0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.02);
+}
+.navBtn{flex:1;text-align:center;color:rgba(255,255,255,0.8);font-size:13px;cursor:pointer;user-select:none;transition:all .18s}
+.navBtn .ico{display:block;margin:0 auto 6px;width:28px;height:28px;stroke:rgba(255,255,255,0.65);fill:none}
+.navBtn.active{color:#fff}
+.navBtn.active .ico{stroke:linear-gradient(90deg,#ff416c,#ff8a00);stroke: #ff416c}
+
+/* HOME MODAL (Option A) */
+#categoryBox{
+  position:fixed;left:50%;top:18%;
+  transform:translateX(-50%) scale(.95);
+  width:min(520px,86%);background:rgba(255,255,255,0.06);
+  border-radius:14px;padding:18px;z-index:400;backdrop-filter:blur(20px);
+  box-shadow:0 18px 60px rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.04);
+  display:none;opacity:0;transition:opacity .22s ease, transform .22s ease;
+}
+#categoryBox.show{display:block;opacity:1;transform:translateX(-50%) scale(1)}
+.catTitle{font-size:16px;color:#fff;margin-bottom:12px;text-align:center}
+.categoryGrid{display:flex;gap:12px;justify-content:space-between}
+.categoryCard{flex:1;padding:14px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));text-align:center;cursor:pointer;transition:transform .14s, box-shadow .14s}
+.categoryCard:hover{transform:translateY(-6px);box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+.categoryCard .label{font-size:15px;color:#fff;margin-top:8px}
+
+/* small helper */
+.hidden{display:none}
 </style>
 </head>
 <body>
 
-<div id="feed"></div>
+<!-- CATEGORY MODAL (Option A) -->
+<div id="categoryBox" aria-hidden="true">
+  <div class="catTitle">Choose Category</div>
+  <div class="categoryGrid">
+    <div class="categoryCard" onclick="loadCategory('desi')">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ff416c"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+      <div class="label">Desi</div>
+    </div>
+    <div class="categoryCard" onclick="loadCategory('videshi')">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ff8a00"><path d="M21 8V7l-3 2v6l3 2v-9zM3 8v9l3-2V10L3 8z"/></svg>
+      <div class="label">Videshi</div>
+    </div>
+    <div class="categoryCard" onclick="loadCategory('mix')">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6"><path d="M12 2v20M2 12h20"/></svg>
+      <div class="label">Mix</div>
+    </div>
+  </div>
+</div>
 
-<!-- Play/Pause Icon -->
+<!-- FEEDS -->
+<div id="feed" aria-hidden="false"></div>
+<div id="picFeed" aria-hidden="true"></div>
+
+<!-- UI elements -->
 <div id="playPauseIcon">❚❚</div>
+<div id="progressContainer"><div id="progressBar"></div></div>
 
-<!-- Progress Bar -->
-<div id="progressContainer">
-    <div id="progressBar"></div>
+<!-- NAV -->
+<div id="bottomNav">
+  <div class="navBtn" id="navHomeBtn" onclick="openHome()">
+    <svg class="ico" viewBox="0 0 24 24" stroke-width="1.6"><path d="M3 9l9-7 9 7v11a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/></svg>
+    Home
+  </div>
+
+  <div class="navBtn active" id="navVideoBtn" onclick="showVideo()">
+    <svg class="ico" viewBox="0 0 24 24" stroke-width="1.6"><polygon points="5 3 19 12 5 21"/></svg>
+    Videos
+  </div>
+
+  <div class="navBtn" id="navPicBtn" onclick="showPics()">
+    <svg class="ico" viewBox="0 0 24 24" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="2.5"/><path d="M21 15l-5-5L5 21"/></svg>
+    Photos
+  </div>
 </div>
 
 <script>
-/* SAMPLE VIDEOS */
-const videoList = [
-    "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
-    "https://samplelib.com/lib/preview/mp4/sample-10s.mp4",
-    "https://samplelib.com/lib/preview/mp4/sample-15s.mp4",
-    "https://samplelib.com/lib/preview/mp4/sample-20s.mp4",
-    "https://samplelib.com/lib/preview/mp4/sample-30s.mp4"
+/* --------------------------
+   Data sources (sample)
+   -------------------------- */
+const desiVideos = [
+  "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
 ];
+const videshiVideos = [
+  "https://samplelib.com/lib/preview/mp4/sample-10s.mp4",
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+];
+let currentSource = [...desiVideos, ...videshiVideos]; // default Mix
 
-function getRandomVideo() {
-    return videoList[Math.floor(Math.random() * videoList.length)];
+/* Utility for random pics (unique each time) */
+function randomPic() {
+  const h = 1600 + Math.floor(Math.random()*400);
+  return `https://picsum.photos/1080/${h}?random=${Math.random().toString(36).slice(2)}`;
 }
 
+/* DOM refs */
 const feed = document.getElementById("feed");
-const progressContainer = document.getElementById("progressContainer");
+const picFeed = document.getElementById("picFeed");
+const playPauseIcon = document.getElementById("playPauseIcon");
 const progressBar = document.getElementById("progressBar");
+const progressContainer = document.getElementById("progressContainer");
+const categoryBox = document.getElementById("categoryBox");
+const navHomeBtn = document.getElementById("navHomeBtn");
+const navVideoBtn = document.getElementById("navVideoBtn");
+const navPicBtn = document.getElementById("navPicBtn");
+
+/* state */
 let currentVideo = null;
+let progressInterval = null;
+let activeMode = "video"; // "video" or "photo"
 
-/* ICON HANDLER */
-function showPlayPauseIcon(isPlaying) {
-    const icon = document.getElementById("playPauseIcon");
+/* --------------------------
+   UI helpers
+   -------------------------- */
+function setActiveNav(mode){
+  navHomeBtn.classList.remove("active");
+  navVideoBtn.classList.remove("active");
+  navPicBtn.classList.remove("active");
+  if(mode === "video") navVideoBtn.classList.add("active");
+  if(mode === "photo") navPicBtn.classList.add("active");
+}
 
-    if (isPlaying) {
-        icon.textContent = "❚❚";  // clean pause icon
+/* show modal */
+function openHome(){
+  categoryBox.classList.add("show");
+  categoryBox.style.display = "block";
+  navHomeBtn.classList.add("active");
+}
+/* close modal */
+function closeHome(){
+  categoryBox.classList.remove("show");
+  setTimeout(()=>{ categoryBox.style.display = "none"; },240);
+  navHomeBtn.classList.remove("active");
+}
+
+/* --------------------------
+   Mode switching
+   -------------------------- */
+function showVideo(){
+  closeHome();
+  activeMode = "video";
+  feed.style.display = "block";
+  picFeed.style.display = "none";
+  progressContainer.style.display = "block";
+  setActiveNav("video");
+  stopPicFeed(); // cleanup pics feed
+  ensureVideoFeedReady();
+}
+function showPics(){
+  closeHome();
+  activeMode = "photo";
+  feed.style.display = "none";
+  picFeed.style.display = "block";
+  progressContainer.style.display = "none";
+  setActiveNav("photo");
+  cleanupVideos(); // pause / stop videos
+  ensurePicFeedReady();
+}
+
+/* --------------------------
+   Video feed logic
+   -------------------------- */
+function makeVideoCard(src){
+  const wrapper = document.createElement("div");
+  wrapper.className = "post";
+
+  const spinner = document.createElement("div");
+  spinner.className = "spinner";
+
+  const v = document.createElement("video");
+  v.setAttribute("playsinline","");
+  v.muted = true;
+  v.preload = "auto";
+  v.src = src;
+
+  // hide video until ready (spinner shows)
+  v.style.opacity = 0;
+
+  v.addEventListener("loadeddata", ()=>{
+    // remove spinner and show
+    if(spinner.parentNode) spinner.parentNode.removeChild(spinner);
+    v.style.transition = "opacity .25s ease";
+    v.style.opacity = 1;
+    // autoplay if visible later
+  });
+
+  // tap to play/pause and flash icon
+  v.addEventListener("click", ()=>{
+    if(v.paused){
+      v.play().catch(()=>{}); showPlayPause(true);
     } else {
-        icon.textContent = "▲";   // clean white triangle (play)
+      v.pause(); showPlayPause(false);
     }
+  });
 
-    icon.style.opacity = 1;
+  // on end -> scroll to next
+  v.addEventListener("ended", ()=>{
+    feed.scrollBy({top: window.innerHeight, behavior:"smooth"});
+  });
 
-    setTimeout(() => {
-        icon.style.opacity = 0;
-    }, 800);
+  wrapper.appendChild(v);
+  wrapper.appendChild(spinner);
+  return wrapper;
 }
 
-/* CREATE POST */
-function createPost() {
-    const div = document.createElement("div");
-    div.className = "post";
-
-    const video = document.createElement("video");
-    video.src = getRandomVideo();
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = "auto";
-
-    /* Tap Play/Pause */
-    video.addEventListener("click", () => {
-        if (video.paused) {
-            video.play();
-            showPlayPauseIcon(true);
-        } else {
-            video.pause();
-            showPlayPauseIcon(false);
-        }
-    });
-
-    /* Autoplay when loaded */
-    video.addEventListener("loadeddata", () => video.play());
-
-    /* Auto next */
-    video.addEventListener("ended", () => {
-        feed.scrollBy({ top: window.innerHeight, behavior: "smooth" });
-    });
-
-    div.appendChild(video);
-    return div;
+function ensureVideoFeedReady(){
+  // if feed empty, load initial set
+  if(feed.children.length === 0){
+    for(let i=0;i<4;i++) feed.appendChild(makeVideoCard(randomVideo()));
+  }
+  // update current video now
+  updateCurrentVideo();
 }
 
-/* Initial videos */
-for (let i = 0; i < 4; i++) {
-    feed.appendChild(createPost());
+/* get random video from currentSource (mix works) */
+function randomVideo(){
+  return currentSource[Math.floor(Math.random()*currentSource.length)];
 }
 
-/* Detect current video */
-function updateCurrentVideo() {
-    const posts = document.querySelectorAll(".post");
-    let mid = window.innerHeight / 2;
-
-    posts.forEach(post => {
-        const rect = post.getBoundingClientRect();
-        const vid = post.querySelector("video");
-
-        if (rect.top < mid && rect.bottom > mid) {
-            if (currentVideo !== vid) {
-                if (currentVideo) currentVideo.pause();
-                currentVideo = vid;
-                currentVideo.play();
-                progressBar.style.width = "0%";
-            }
-        }
-    });
-
-    /* Infinite load */
-    if (posts[posts.length - 2].getBoundingClientRect().top < window.innerHeight) {
-        feed.appendChild(createPost());
+/* update current visible video by checking middle of viewport */
+function updateCurrentVideo(){
+  const posts = feed.querySelectorAll(".post");
+  const mid = window.innerHeight/2;
+  let found = null;
+  for(let p of posts){
+    const r = p.getBoundingClientRect();
+    if(r.top < mid && r.bottom > mid){
+      found = p.querySelector("video");
+      break;
     }
+  }
+
+  if(found && found !== currentVideo){
+    if(currentVideo) try{ currentVideo.pause() } catch(e){}
+    currentVideo = found;
+    // only play if in video mode
+    if(activeMode === "video"){
+      currentVideo.play().catch(()=>{});
+      startProgressUpdater();
+    }
+  }
+
+  // infinite append when nearing end
+  const last = feed.lastElementChild;
+  if(last){
+    const r = last.getBoundingClientRect();
+    if(r.top < window.innerHeight + 200){
+      feed.appendChild(makeVideoCard(randomVideo()));
+    }
+  }
 }
 
-/* Update progress bar */
-function updateProgress() {
-    if (!currentVideo || !currentVideo.duration) return;
-    let percent = (currentVideo.currentTime / currentVideo.duration) * 100;
-    progressBar.style.width = percent + "%";
+/* progress updater for the currentVideo */
+function startProgressUpdater(){
+  stopProgressUpdater();
+  progressInterval = setInterval(()=>{
+    if(!currentVideo || !currentVideo.duration) return;
+    const p = (currentVideo.currentTime / currentVideo.duration) * 100;
+    progressBar.style.width = p + "%";
+  },60);
 }
-setInterval(updateProgress, 50);
+function stopProgressUpdater(){
+  if(progressInterval){ clearInterval(progressInterval); progressInterval = null; }
+}
 
-/* SEEKING BAR */
+/* seeking support */
 let seeking = false;
+function seekTo(clientX){
+  if(!currentVideo || !currentVideo.duration) return;
+  const rect = progressContainer.getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+  const frac = x / rect.width;
+  currentVideo.currentTime = frac * currentVideo.duration;
+  progressBar.style.width = (frac*100) + "%";
+}
+progressContainer.addEventListener("mousedown",(e)=>{ seeking=true; seekTo(e.clientX); });
+document.addEventListener("mousemove",(e)=>{ if(seeking) seekTo(e.clientX); });
+document.addEventListener("mouseup",()=>{ seeking=false; });
 
-function seek(e) {
-    if (!currentVideo || !currentVideo.duration) return;
+progressContainer.addEventListener("touchstart",(e)=>{ seeking=true; seekTo(e.touches[0].clientX); },{passive:true});
+progressContainer.addEventListener("touchmove",(e)=>{ if(seeking) seekTo(e.touches[0].clientX); },{passive:true});
+progressContainer.addEventListener("touchend",(e)=>{ seeking=false; },{passive:true});
 
-    const rect = progressContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percent = Math.max(0, Math.min(1, x / rect.width));
-
-    currentVideo.currentTime = percent * currentVideo.duration;
-    progressBar.style.width = (percent * 100) + "%";
+/* cleanup when switching away from videos */
+function cleanupVideos(){
+  stopProgressUpdater();
+  // pause and remove videos' src (optional)
+  const vids = feed.querySelectorAll("video");
+  vids.forEach(v=>{
+    try{ v.pause(); }catch(e){}
+    // keep elements (so switching back is fast), but do not remove unless needed
+  });
 }
 
-progressContainer.addEventListener("mousedown", e => { seeking = true; seek(e); });
-progressContainer.addEventListener("mousemove", e => { if (seeking) seek(e); });
-document.addEventListener("mouseup", () => seeking = false);
+/* when unloading/stoping pic feed */
+function stopPicFeed(){
+  // nothing special but ensure images not overfilled (we keep them)
+}
 
-progressContainer.addEventListener("touchstart", e => { seeking = true; seek(e.touches[0]); });
-progressContainer.addEventListener("touchmove", e => { if (seeking) seek(e.touches[0]); });
-document.addEventListener("touchend", () => seeking = false);
+/* play/pause flash */
+function showPlayPause(isPlay){
+  playPauseIcon.textContent = isPlay ? "❚❚" : "▶";
+  playPauseIcon.style.opacity = 1;
+  playPauseIcon.style.transform = "translate(-50%,-50%) scale(1)";
+  setTimeout(()=>{ playPauseIcon.style.opacity = 0; playPauseIcon.style.transform = "translate(-50%,-50%) scale(.96)"; },650);
+}
 
-/* On scroll: update video */
-feed.addEventListener("scroll", updateCurrentVideo);
+/* --------------------------
+   Picture feed (infinite random)
+   -------------------------- */
+function makePicCard(){
+  const w = document.createElement("div");
+  w.className = "picPost";
 
-updateCurrentVideo();
+  const spinner = document.createElement("div");
+  spinner.className = "spinner";
+
+  const img = document.createElement("img");
+  // unique url to avoid caching identical images
+  img.src = randomPic();
+  img.style.opacity = 0;
+  img.addEventListener("load", ()=>{
+    if(spinner.parentNode) spinner.parentNode.removeChild(spinner);
+    img.style.transition = "opacity .28s ease";
+    img.style.opacity = 1;
+  });
+  img.addEventListener("error", ()=>{
+    // on error, still remove spinner and put placeholder color
+    if(spinner.parentNode) spinner.parentNode.removeChild(spinner);
+    img.style.opacity = 1;
+    img.style.background = "#111";
+  });
+
+  w.appendChild(img);
+  w.appendChild(spinner);
+  return w;
+}
+
+/* ensure picture feed initial load */
+function ensurePicFeedReady(){
+  if(picFeed.children.length === 0){
+    for(let i=0;i<6;i++) picFeed.appendChild(makePicCard());
+    picFeed.scrollTop = 0;
+  }
+}
+
+/* infinite append for picture feed */
+picFeed.addEventListener("scroll", ()=>{
+  if(activeMode !== "photo") return;
+  if(picFeed.scrollTop + picFeed.clientHeight >= picFeed.scrollHeight - 240){
+    for(let i=0;i<3;i++) picFeed.appendChild(makePicCard());
+  }
+});
+
+/* --------------------------
+   Category selection
+   -------------------------- */
+function loadCategory(name){
+  closeHome();
+  if(name === "desi") currentSource = [...desiVideos];
+  else if(name === "videshi") currentSource = [...videshiVideos];
+  else if(name === "mix") currentSource = [...desiVideos, ...videshiVideos];
+
+  // clear & refill feed
+  feed.innerHTML = "";
+  for(let i=0;i<4;i++) feed.appendChild(makeVideoCard(randomVideo()));
+  // show video mode
+  showVideo();
+}
+
+/* small wrapper to make video card (keeps naming) */
+function makeVideoCard(src){ return makeVideoCard; } // placeholder to avoid linter issues
+/* above line intentionally overridden below; create actual function name used */
+
+/* Fix: define function used by loadCategory earlier */
+function makeVideoCard(src){
+  return makeVideoCardReal(src);
+}
+function makeVideoCardReal(src){
+  return makeVideoCardRealInner(src);
+}
+function makeVideoCardRealInner(src){
+  return makeVideoCardImplementation(src);
+}
+function makeVideoCardImplementation(src){
+  const wrapper = document.createElement("div");
+  wrapper.className = "post";
+  const spinner = document.createElement("div");
+  spinner.className = "spinner";
+  const v = document.createElement("video");
+  v.setAttribute("playsinline","");
+  v.muted = true;
+  v.preload = "auto";
+  v.src = src;
+  v.style.opacity = 0;
+  v.addEventListener("loadeddata", ()=>{
+    if(spinner.parentNode) spinner.parentNode.removeChild(spinner);
+    v.style.transition = "opacity .22s ease";
+    v.style.opacity = 1;
+  });
+  v.addEventListener("click", ()=>{
+    if(v.paused){ v.play().catch(()=>{}); showPlayPause(true); } else { v.pause(); showPlayPause(false); }
+  });
+  v.addEventListener("ended", ()=> feed.scrollBy({top:window.innerHeight, behavior:"smooth"}));
+  wrapper.appendChild(v); wrapper.appendChild(spinner);
+  return wrapper;
+}
+
+/* --------------------------
+   Initialization: load default feed (video) and wire events
+   -------------------------- */
+window.addEventListener("load", ()=>{
+  // show video by default
+  showVideo();
+
+  // attach scroll listener for feed visibility detection
+  feed.addEventListener("scroll", ()=> {
+    if(activeMode === "video") updateCurrentVideo();
+  }, {passive:true});
+
+  // initial detection on small timeout to allow render
+  setTimeout(()=> updateCurrentVideo(), 200);
+});
+
+/* allow closing modal by clicking outside */
+document.addEventListener("click", (e)=>{
+  if(categoryBox.style.display === "block"){
+    if(!categoryBox.contains(e.target) && !navHomeBtn.contains(e.target)){
+      closeHome();
+    }
+  }
+});
+
+/* responsiveness: on resize update detection */
+window.addEventListener("resize", ()=> updateCurrentVideo());
+
+/* expose small debug helpers in console */
+window._reloadVideos = ()=>{ feed.innerHTML=''; for(let i=0;i<4;i++) feed.appendChild(makeVideoCard(randomVideo())); updateCurrentVideo(); };
 </script>
-
 </body>
 </html>
