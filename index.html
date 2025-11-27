@@ -145,6 +145,52 @@ function update(t){
   document.getElementById("status").textContent = t;
 }
 </script>
+<script src="//libtl.com/sdk.js" data-zone="8555852" data-sdk="show_8555852"></script>
+
+<button onclick="startAd()">WATCH AD</button>
+
+<script>
+function log(x){ console.log("%c " + x, "background:#222; color:#0f0; padding:4px"); }
+
+function startAd(){
+    log("Ad requested...");
+    try {
+        show_8555852();
+        log("show_8555852() called");
+    } catch(e) {
+        log("ERROR calling show_8555852(): " + e);
+    }
+}
+
+/* --- MONETAG CALLBACK SNIFFERS --- */
+
+// official callback (if used)
+window.show_8555852_callback = function(event, data){
+    log("callback: " + event + " | " + JSON.stringify(data));
+};
+
+// detect ANY event
+[
+    "reward","rewarded","complete","finished",
+    "monetag_reward","monetag.completed","monetag.reward",
+    "done","ad_complete"
+].forEach(ev=>{
+    document.addEventListener(ev, ()=>{
+        log("DOM EVENT FIRED: " + ev);
+    });
+});
+
+// detect MonetagReward object
+let intv = setInterval(()=>{
+    if (window.MonetagReward && MonetagReward.on){
+        log("MonetagReward object detected");
+        MonetagReward.on("reward", ()=>{
+            log("MonetagReward reward event fired");
+        });
+        clearInterval(intv);
+    }
+},500);
+</script>
 
 </body>
 </html>
