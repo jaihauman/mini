@@ -1,215 +1,95 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mini App — Custom Theme Locker</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MiniApp – Reward Unlock</title>
 
-  <!-- Telegram WebApp -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <!-- Monetag Reward SDK -->
-  <script src="//libtl.com/sdk.js" data-zone="8555852" data-sdk="show_8555852"></script>
-
-  <style>
-    :root{
-      --bg: #0f1720;
-      --card: #111827;
-      --muted: #9ca3af;
-      --accent: #06b6d4;
-      --text: #e6eef3;
-      --glass: rgba(255,255,255,0.03);
-      --blur: 8px;
-    }
-    .light {
-      --bg: #f6fbff;
-      --card: #ffffff;
-      --muted: #6b7280;
-      --accent: #0077cc;
-      --text: #0b1220;
-      --glass: rgba(0,0,0,0.03);
-      --blur: 0px;
-    }
-
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      min-height:100%;
-      font-family: Inter, system-ui;
-      background: linear-gradient(180deg,var(--bg), #07101a 120%);
-      color:var(--text);
-      padding-bottom:84px;
-    }
-
-    /* Header */
-    header{
-      display:flex;align-items:center;gap:12px;
-      padding:18px 16px;position:sticky;top:0;
-      backdrop-filter: blur(var(--blur));
-      background: linear-gradient(180deg, rgba(0,0,0,0.16), transparent);
-      z-index:40;
-    }
-    .logo{
-      width:44px;height:44px;border-radius:10px;
-      background:linear-gradient(135deg,var(--accent),#0ea5a3);
-      display:flex;align-items:center;justify-content:center;
-      font-weight:700;color:#fff;
-    }
-
-    .container{max-width:1100px;margin:16px auto;padding:0 16px}
-
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-      gap:14px;
-    }
-    .card{
-      background:rgba(255,255,255,0.04);
-      border-radius:12px;padding:12px;
-      transition:0.25s;
-      border:1px solid rgba(255,255,255,0.06);
-    }
-    .thumb{width:100%;height:140px;object-fit:cover;border-radius:10px;filter:blur(8px) brightness(0.7);transition:0.3s;}
-    .thumb.unlocked{filter:none;}
-
-    .unlockBtn{
-      background:linear-gradient(90deg,var(--accent), #06b6d4);
-      color:white;border:none;padding:10px 12px;border-radius:9px;
-      font-weight:700;cursor:pointer;
-    }
-    .unlockedBadge{
-      background:linear-gradient(90deg,#16a34a,#22c55e);
-      padding:8px 10px;border-radius:9px;font-weight:700;color:white;font-size:13px;
-    }
-  </style>
+<style>
+body{
+  margin:0;
+  background:#0f1720;
+  font-family:Arial;
+  color:white;
+  padding:20px;
+}
+.card{
+  background:#1a2433;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:15px;
+}
+.thumb{
+  width:100%;
+  height:160px;
+  object-fit:cover;
+  border-radius:10px;
+}
+.unlockBtn{
+  margin-top:10px;
+  padding:10px 15px;
+  background:#06b6d4;
+  color:white;
+  border:none;
+  border-radius:8px;
+  font-weight:bold;
+  cursor:pointer;
+}
+.unlockedBtn{
+  margin-top:10px;
+  padding:10px 15px;
+  background:#16a34a;
+  color:white;
+  border:none;
+  border-radius:8px;
+  font-weight:bold;
+  cursor:pointer;
+}
+#status{
+  margin-top:20px;
+  color:#9ca3af;
+}
+.adBox{
+  display:none;
+  position:fixed;
+  left:0;top:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.8);
+  color:white;
+  justify-content:center;
+  align-items:center;
+  font-size:26px;
+  text-align:center;
+}
+</style>
 </head>
 <body>
 
-<header>
-  <div class="logo">MA</div>
+<h2>Reward Content</h2>
+<p>Watch a short ad simulation to unlock content.</p>
+
+<div class="card">
+  <img class="thumb" src="https://placehold.co/600x400/08f/fff?text=Premium+Content">
+  <h3>Exclusive Video Link</h3>
+  <p>You must watch ad to unlock.</p>
+
+  <button id="unlockBtn" class="unlockBtn">Watch Ad to Unlock</button>
+  <button id="openBtn" class="unlockedBtn" style="display:none;">Open Content</button>
+</div>
+
+<div id="status">Ready</div>
+
+<!-- Fake Ad Box -->
+<div id="adBox" class="adBox">
   <div>
-    <div class="title">MiniApp Locker</div>
-    <div class="subtitle">Monetag Rewards Working</div>
+    <div>⭐ Ad playing... ⭐</div>
+    <div style="font-size:18px;margin-top:10px;">Wait <span id="adTimer">5</span> seconds</div>
   </div>
-</header>
-
-<main class="container">
-  <h2>Premium Content</h2>
-  <div class="muted">Watch ad → unlock item</div>
-
-  <div id="grid" class="grid"></div>
-
-  <div style="margin-top:20px;color:var(--muted);">
-    Status: <span id="lastMsg">Ready</span>
-  </div>
-</main>
-
+</div>
 
 <script>
-/* Telegram init */
-const tg = window.Telegram?.WebApp;
-if (tg) { try{tg.expand()}catch(e){} }
+const YOUTUBE_LINK = "https://www.youtube.com/watch?v=_PxpEmSc3zo&list=LL";
 
-/* Sample Items */
-const ITEMS = [
-  { id: "itm1", title:"Sunset", img:"https://placehold.co/600x400?text=Sunset", url:"https://example.com/sunset" },
-  { id: "itm2", title:"Neon City", img:"https://placehold.co/600x400?text=City", url:"https://example.com/neon" },
-  { id: "itm3", title:"Lake", img:"https://placehold.co/600x400?text=Lake", url:"https://example.com/lake" }
-];
+let unlocked = false;
 
-const UNLOCK_KEY = "miniapp_unlock_v1";
-let unlocked = new Set(JSON.parse(localStorage.getItem(UNLOCK_KEY) || "[]"));
-let currentItem = null;
-
-/* Render Items */
-function render() {
-  const grid = document.getElementById("grid");
-  grid.innerHTML = "";
-
-  ITEMS.forEach(it => {
-    const card = document.createElement("div");
-    card.className = "card";
-
-    const isUnlocked = unlocked.has(it.id);
-
-    card.innerHTML = `
-      <img class="thumb ${isUnlocked?'unlocked':''}" src="${it.img}">
-      <h4>${it.title}</h4>
-      ${isUnlocked 
-        ? `<div class="unlockedBadge" data-id="${it.id}">Open</div>`
-        : `<button class="unlockBtn" data-id="${it.id}">Watch Ad</button>`
-      }
-    `;
-
-    grid.appendChild(card);
-  });
-
-  document.querySelectorAll(".unlockBtn").forEach(btn=>{
-    btn.onclick = ()=> startUnlock(btn.dataset.id);
-  });
-
-  document.querySelectorAll(".unlockedBadge").forEach(btn=>{
-    btn.onclick = ()=>{
-      const item = ITEMS.find(x=>x.id===btn.dataset.id);
-      window.open(item.url,"_blank");
-    }
-  });
-}
-
-/* Start Ad */
-function startUnlock(id){
-  currentItem = id;
-  updateStatus("Loading Ad...");
-
-  if(typeof window.show_8555852 === "function"){
-    try{
-      window.show_8555852();
-      updateStatus("Watch the full ad...");
-    }catch(e){
-      updateStatus("Ad failed to start");
-      alert("Error starting ad");
-    }
-  }else{
-    alert("SDK not loaded");
-  }
-}
-
-/* ------------ FIXED Monetag Reward Callback ------------ */
-window.show_8555852_callback = function(event, data){
-  console.log("Monetag:", event, data);
-
-  if(event === "complete"){
-    unlock(currentItem);
-    updateStatus("Unlocked!");
-    currentItem = null;
-  }
-
-  if(event === "error"){
-    updateStatus("Ad failed");
-    alert("Ad error. Try again.");
-  }
-
-  if(event === "close"){
-    updateStatus("Ad closed before completion");
-  }
-};
-/* -------------------------------------------------------- */
-
-function unlock(id){
-  unlocked.add(id);
-  localStorage.setItem(UNLOCK_KEY, JSON.stringify([...unlocked]));
-  render();
-}
-
-function updateStatus(t){
-  document.getElementById("lastMsg").textContent = t;
-}
-
-/* Init */
-render();
-
-</script>
-
-</body>
-</html>
+const unlockBtn = document.getElementById("unlockBtn");
+const o
