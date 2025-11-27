@@ -299,18 +299,29 @@
     // Listen for Monetag rewarded event.
     // Many Monetag integrations dispatch a 'rewarded' event (document). 
     // If your SDK uses a different event name, adapt this listener.
-    document.addEventListener("rewarded", function(ev){
-      // The event could contain data — but many implementations do not provide the item id.
-      // We'll rely on currentRequestItem to know which item to unlock.
-      if (!currentRequestItem) {
-        console.warn("Rewarded event received but no currentRequestItem set.");
-        updateStatus("Ad completed.");
-        return;
-      }
-      unlockItem(currentRequestItem);
-      updateStatus("Ad completed — content unlocked!");
-      currentRequestItem = null;
-    });
+   // REAL Monetag callback:
+// Called automatically when the ad finishes.
+window.show_8555852_callback = function (event, data) {
+    console.log("Monetag event:", event, data);
+
+    if (event === "complete") {
+        if (currentRequestItem) {
+            unlockItem(currentRequestItem);
+            updateStatus("Ad completed — content unlocked!");
+            currentRequestItem = null;
+        }
+    }
+
+    if (event === "error") {
+        updateStatus("Ad failed. Try again.");
+        alert("Ad failed. Please try again later.");
+    }
+
+    if (event === "close") {
+        updateStatus("Ad closed before finishing.");
+    }
+};
+
 
     // Fallback: some SDKs call a custom global callback name; we add a generic hook
     // If Monetag supports calling window.onMonetagRewarded() you can set it here:
